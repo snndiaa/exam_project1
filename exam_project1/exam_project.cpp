@@ -1,20 +1,23 @@
 #include <iostream>
 #include <cstring>
+
 using namespace std;
 
-const int PRODUCTS = 100;
 const int NAME_LENGTH = 50;
 const int MANUFACTURER_LENGTH = 50;
 const int CATEGORY_LENGTH = 50;
-const int FILENAME_LENGTH = 100;
+const int FILE_NAME_LENGTH = 100;
+const int INITIAL_CAPACITY = 10;
 
-struct Date {
+struct Date
+{
     int day;
     int month;
     int year;
 };
 
-struct Product {
+struct Product
+{
     char name[NAME_LENGTH];
     char manufacturer[MANUFACTURER_LENGTH];
     double price;
@@ -23,331 +26,383 @@ struct Product {
     Date expiration_date;
 };
 
-void add_product(Product products[], int& num_products) {
-    if (num_products == PRODUCTS) return;
+enum MenuOption
+{
+    ADD = 1,
+    DELETE,
+    REPLACE,
+    SEARCH,
+    SORT,
+    SAVE,
+    LOAD,
+    EXIT,
+    DISPLAY
+};
 
-    Product new_product;
-
-    cout << "\nEnter the name of the product: ";
-    cin.getline(new_product.name, NAME_LENGTH);
-
-    cout << "Enter the manufacturer of the product: ";
-    cin.getline(new_product.manufacturer, MANUFACTURER_LENGTH);
-
-    cout << "Enter the price of the product: ";
-    cin >> new_product.price;
-    cin.ignore();
-
-    cout << "Enter the category of the product: ";
-    cin.getline(new_product.category, CATEGORY_LENGTH);
-
-    cout << "Enter the arrival date of the product (day month year): ";
-    cin >> new_product.arrival_date.day >> new_product.arrival_date.month >> new_product.arrival_date.year;
-    cin.ignore();
-
-    cout << "Enter the expiration date of the product (day month year): ";
-    cin >> new_product.expiration_date.day >> new_product.expiration_date.month >> new_product.expiration_date.year;
-    cin.ignore();
-
-    products[num_products++] = new_product;
-
-    cout << "\nProduct added successfully." << endl;
+void clear_input_buffer()
+{
+    cin.ignore(10000, '\n');
 }
 
-void delete_product(Product products[], int delete_ind, int& num_products) {
-    if (delete_ind < 0 || delete_ind >= num_products) return;
-
-    for (int i = delete_ind; i < num_products - 1; i++) {
-        products[i] = products[i + 1];
-    }
-
-    num_products--;
-    cout << "\nProduct deleted successfully." << endl;
-}
-
-void replace_product(Product products[], int replace_ind, int num_products) {
-    if (replace_ind < 0 || replace_ind >= num_products) return;
-
-    Product new_product;
-
-    cout << "\nEnter the name of the product: ";
-    cin.getline(new_product.name, NAME_LENGTH);
+void input_product_data(Product& p)
+{
+    clear_input_buffer();
+    cout << endl << "Enter the name of the product: ";
+    cin.getline(p.name, NAME_LENGTH);
 
     cout << "Enter the manufacturer of the product: ";
-    cin.getline(new_product.manufacturer, MANUFACTURER_LENGTH);
+    cin.getline(p.manufacturer, MANUFACTURER_LENGTH);
 
     cout << "Enter the price of the product: ";
-    cin >> new_product.price;
-    cin.ignore();
+    cin >> p.price;
+    clear_input_buffer();
 
     cout << "Enter the category of the product: ";
-    cin.getline(new_product.category, CATEGORY_LENGTH);
+    cin.getline(p.category, CATEGORY_LENGTH);
 
     cout << "Enter the arrival date of the product (day month year): ";
-    cin >> new_product.arrival_date.day >> new_product.arrival_date.month >> new_product.arrival_date.year;
-    cin.ignore();
+    cin >> p.arrival_date.day >> p.arrival_date.month >> p.arrival_date.year;
+    clear_input_buffer();
 
     cout << "Enter the expiration date of the product (day month year): ";
-    cin >> new_product.expiration_date.day >> new_product.expiration_date.month >> new_product.expiration_date.year;
-    cin.ignore();
+    cin >> p.expiration_date.day >> p.expiration_date.month >> p.expiration_date.year;
+    clear_input_buffer();
+}
 
-    products[replace_ind] = new_product;
+void print_product_data(const Product& p, int index)
+{
+    cout << endl << "Product found at index " << index << ":" << endl;
+    cout << "Name: " << p.name << endl;
+    cout << "Manufacturer: " << p.manufacturer << endl;
+    cout << "Price: " << p.price << endl;
+    cout << "Category: " << p.category << endl;
+    cout << "Arrival Date: " << p.arrival_date.day << "/" << p.arrival_date.month << "/" << p.arrival_date.year << endl;
+    cout << "Expiration Date: " << p.expiration_date.day << "/" << p.expiration_date.month << "/" << p.expiration_date.year << endl;
+}
+
+void resize_array(Product*& list, int& capacity)
+{
+    capacity *= 2;
+    Product* temp = new Product[capacity];
+    for (int i = 0; i < capacity / 2; ++i)
+        temp[i] = list[i];
+    delete[] list;
+    list = temp;
+}
+
+void add_product_data(Product*& list, int& count, int& capacity)
+{
+    if (count == capacity)
+        resize_array(list, capacity);
+
+    Product new_product;
+    input_product_data(new_product);
+    list[count++] = new_product;
+    cout << endl << "Product added successfully." << endl;
+}
+
+void delete_product_data(Product* list, int& count)
+{
+    int index;
+    cout << endl << "Enter the index of the product to delete: ";
+    cin >> index;
+    clear_input_buffer();
+    if (index < 0 || index >= count) return;
+
+    for (int i = index; i < count - 1; ++i)
+        list[i] = list[i + 1];
+
+    count--;
+    cout << endl << "Product deleted successfully." << endl;
+}
+
+void replace_product_data(Product* list, int count)
+{
+    int index;
+    cout << endl << "Enter the index of the product to replace: ";
+    cin >> index;
+    clear_input_buffer();
+    if (index < 0 || index >= count) return;
+
+    input_product_data(list[index]);
     cout << "Product replaced successfully." << endl;
 }
 
-void search_product_by_name(const Product products[], int num_products, const char* name) {
+void search_by_name(Product* list, int count)
+{
+    char name[NAME_LENGTH];
+    cout << endl << "Enter the name of the product: ";
+    clear_input_buffer();
+    cin.getline(name, NAME_LENGTH);
     bool found = false;
-    for (int i = 0; i < num_products; i++) {
-        if (strcmp(products[i].name, name) == 0) {
-            cout << "\nProduct found at index " << i << ":\n";
-            cout << "Name: " << products[i].name << "\nManufacturer: " << products[i].manufacturer << "\nPrice: " << products[i].price << "\nCategory: " << products[i].category << "\nArrival Date: " << products[i].arrival_date.day << "/" << products[i].arrival_date.month << "/" << products[i].arrival_date.year << "\nExpiration Date: " << products[i].expiration_date.day << "/" << products[i].expiration_date.month << "/" << products[i].expiration_date.year << endl;
+    for (int i = 0; i < count; ++i)
+    {
+        if (strcmp(list[i].name, name) == 0)
+        {
+            print_product_data(list[i], i);
             found = true;
         }
     }
     if (!found) cout << "Product not found." << endl;
 }
 
-void search_product_by_manufacturer(const Product products[], int num_products, const char* manufacturer) {
+void search_by_manufacturer(Product* list, int count)
+{
+    char manufacturer[MANUFACTURER_LENGTH];
+    cout << endl << "Enter the manufacturer of the product: ";
+    clear_input_buffer();
+    cin.getline(manufacturer, MANUFACTURER_LENGTH);
     bool found = false;
-    for (int i = 0; i < num_products; i++) {
-        if (strcmp(products[i].manufacturer, manufacturer) == 0) {
-            cout << "\nProduct found at index " << i << ":\n";
-            cout << "Name: " << products[i].name << "\nManufacturer: " << products[i].manufacturer << "\nPrice: " << products[i].price << "\nCategory: " << products[i].category << "\nArrival Date: " << products[i].arrival_date.day << "/" << products[i].arrival_date.month << "/" << products[i].arrival_date.year << "\nExpiration Date: " << products[i].expiration_date.day << "/" << products[i].expiration_date.month << "/" << products[i].expiration_date.year << endl;
+    for (int i = 0; i < count; ++i)
+    {
+        if (strcmp(list[i].manufacturer, manufacturer) == 0)
+        {
+            print_product_data(list[i], i);
             found = true;
         }
     }
     if (!found) cout << "Product not found." << endl;
 }
 
-void search_product_by_price(const Product products[], int num_products, double price) {
+void search_by_price(Product* list, int count)
+{
+    double price;
+    cout << endl << "Enter the price of the product: ";
+    cin >> price;
+    clear_input_buffer();
     bool found = false;
-    for (int i = 0; i < num_products; i++) {
-        if (products[i].price == price) {
-            cout << "\nProduct found at index " << i << ":\n";
-            cout << "Name: " << products[i].name << "\nManufacturer: " << products[i].manufacturer << "\nPrice: " << products[i].price << "\nCategory: " << products[i].category << "\nArrival Date: " << products[i].arrival_date.day << "/" << products[i].arrival_date.month << "/" << products[i].arrival_date.year << "\nExpiration Date: " << products[i].expiration_date.day << "/" << products[i].expiration_date.month << "/" << products[i].expiration_date.year << endl;
+    for (int i = 0; i < count; ++i)
+    {
+        if (list[i].price == price)
+        {
+            print_product_data(list[i], i);
             found = true;
         }
     }
     if (!found) cout << "Product not found." << endl;
 }
 
-void search_product_by_category(const Product products[], int num_products, const char* category) {
+void search_by_category(Product* list, int count)
+{
+    char category[CATEGORY_LENGTH];
+    cout << endl << "Enter the category of the product: ";
+    clear_input_buffer();
+    cin.getline(category, CATEGORY_LENGTH);
     bool found = false;
-    for (int i = 0; i < num_products; i++) {
-        if (strcmp(products[i].category, category) == 0) {
-            cout << "\nProduct found at index " << i << ":\n";
-            cout << "Name: " << products[i].name << "\nManufacturer: " << products[i].manufacturer << "\nPrice: " << products[i].price << "\nCategory: " << products[i].category << "\nArrival Date: " << products[i].arrival_date.day << "/" << products[i].arrival_date.month << "/" << products[i].arrival_date.year << "\nExpiration Date: " << products[i].expiration_date.day << "/" << products[i].expiration_date.month << "/" << products[i].expiration_date.year << endl;
+    for (int i = 0; i < count; ++i)
+    {
+        if (strcmp(list[i].category, category) == 0)
+        {
+            print_product_data(list[i], i);
             found = true;
         }
     }
     if (!found) cout << "Product not found." << endl;
 }
 
-void search_product_by_arrival_date(const Product products[], int num_products, const Date arrival_date) {
+void search_by_arrival_date(Product* list, int count)
+{
+    Date d;
+    cout << endl << "Enter the arrival date (day month year): ";
+    cin >> d.day >> d.month >> d.year;
+    clear_input_buffer();
     bool found = false;
-    for (int i = 0; i < num_products; i++) {
-        if (products[i].arrival_date.day == arrival_date.day &&
-            products[i].arrival_date.month == arrival_date.month &&
-            products[i].arrival_date.year == arrival_date.year) {
-            cout << "\nProduct found at index " << i << ":\n";
-            cout << "Name: " << products[i].name << "\nManufacturer: " << products[i].manufacturer << "\nPrice: " << products[i].price << "\nCategory: " << products[i].category << "\nArrival Date: " << products[i].arrival_date.day << "/" << products[i].arrival_date.month << "/" << products[i].arrival_date.year << "\nExpiration Date: " << products[i].expiration_date.day << "/" << products[i].expiration_date.month << "/" << products[i].expiration_date.year << endl;
+    for (int i = 0; i < count; ++i)
+    {
+        if (list[i].arrival_date.day == d.day && list[i].arrival_date.month == d.month && list[i].arrival_date.year == d.year)
+        {
+            print_product_data(list[i], i);
             found = true;
         }
     }
     if (!found) cout << "Product not found." << endl;
 }
 
-void search_product_by_expiration_date(const Product products[], int num_products, const Date expiration_date) {
+void search_by_expiration_date(Product* list, int count)
+{
+    Date d;
+    cout << endl << "Enter the expiration date (day month year): ";
+    cin >> d.day >> d.month >> d.year;
+    clear_input_buffer();
     bool found = false;
-    for (int i = 0; i < num_products; i++) {
-        if (products[i].expiration_date.day == expiration_date.day &&
-            products[i].expiration_date.month == expiration_date.month &&
-            products[i].expiration_date.year == expiration_date.year) {
-            cout << "\nProduct found at index " << i << ":\n";
-            cout << "Name: " << products[i].name << "\nManufacturer: " << products[i].manufacturer << "\nPrice: " << products[i].price << "\nCategory: " << products[i].category << "\nArrival Date: " << products[i].arrival_date.day << "/" << products[i].arrival_date.month << "/" << products[i].arrival_date.year << "\nExpiration Date: " << products[i].expiration_date.day << "/" << products[i].expiration_date.month << "/" << products[i].expiration_date.year << endl;
+    for (int i = 0; i < count; ++i)
+    {
+        if (list[i].expiration_date.day == d.day && list[i].expiration_date.month == d.month && list[i].expiration_date.year == d.year)
+        {
+            print_product_data(list[i], i);
             found = true;
         }
     }
     if (!found) cout << "Product not found." << endl;
 }
 
-void sort_products_by_price(Product products[], int num_products) {
-    for (int i = 0; i < num_products - 1; i++) {
-        for (int j = 0; j < num_products - i - 1; j++) {
-            if (products[j].price > products[j + 1].price) {
-                Product tmp = products[j];
-                products[j] = products[j + 1];
-                products[j + 1] = tmp;
+void sort_by_price(Product* list, int count)
+{
+    for (int i = 0; i < count - 1; ++i)
+    {
+        for (int j = 0; j < count - i - 1; ++j)
+        {
+            if (list[j].price > list[j + 1].price)
+            {
+                Product tmp = list[j];
+                list[j] = list[j + 1];
+                list[j + 1] = tmp;
             }
         }
     }
-    cout << "\nProducts sorted by price." << endl;
+    cout << endl << "Products sorted by price." << endl;
 }
 
-void sort_products_by_category(Product products[], int num_products) {
-    for (int i = 0; i < num_products - 1; i++) {
-        for (int j = 0; j < num_products - i - 1; j++) {
-            if (strcmp(products[j].category, products[j + 1].category) > 0) {
-                Product tmp = products[j];
-                products[j] = products[j + 1];
-                products[j + 1] = tmp;
+void sort_by_category(Product* list, int count)
+{
+    for (int i = 0; i < count - 1; ++i)
+    {
+        for (int j = 0; j < count - i - 1; ++j)
+        {
+            if (strcmp(list[j].category, list[j + 1].category) > 0)
+            {
+                Product tmp = list[j];
+                list[j] = list[j + 1];
+                list[j + 1] = tmp;
             }
         }
     }
-    cout << "\nProducts sorted by category." << endl;
+    cout << endl << "Products sorted by category." << endl;
 }
 
-void save_products_to_file(const Product products[], int num_products, const char* filename) {
+void save_to_file(Product* list, int count, const char* file_name)
+{
     FILE* file = nullptr;
-    if (fopen_s(&file, filename, "wb") != 0 || file == nullptr) return;
-    fwrite(&num_products, sizeof(int), 1, file);
-    fwrite(products, sizeof(Product), num_products, file);
+    if (fopen_s(&file, file_name, "wb") != 0 || file == nullptr) return;
+    fwrite(&count, sizeof(int), 1, file);
+    fwrite(list, sizeof(Product), count, file);
     fclose(file);
-    cout << "\nProducts saved to file." << endl;
+    cout << endl << "Products saved to file." << endl;
 }
 
-void load_products_from_file(Product products[], int& num_products, const char* filename) {
+void load_from_file(Product*& list, int& count, int& capacity, const char* file_name)
+{
     FILE* file = nullptr;
-    if (fopen_s(&file, filename, "rb") != 0 || file == nullptr) return;
-    fread(&num_products, sizeof(int), 1, file);
-    fread(products, sizeof(Product), num_products, file);
+    if (fopen_s(&file, file_name, "rb") != 0 || file == nullptr) return;
+    fread(&count, sizeof(int), 1, file);
+    if (count > capacity)
+    {
+        delete[] list;
+        capacity = count;
+        list = new Product[capacity];
+    }
+    fread(list, sizeof(Product), count, file);
     fclose(file);
-    cout << "\nProducts loaded from file." << endl;
+    cout << endl << "Products loaded from file." << endl;
 }
 
-int main() {
-    Product products[PRODUCTS];
-    int num_products = 0;
-    char filename[FILENAME_LENGTH];
+void display_all_products(Product* list, int count)
+{
+    if (count == 0)
+    {
+        cout << endl << "No products to display." << endl;
+        return;
+    }
+    for (int i = 0; i < count; ++i)
+    {
+        print_product_data(list[i], i);
+    }
+}
 
-    while (true) {
-        cout << "\n========== Warehouse Management System ==========\n";
-        cout << "1. Add a product\n2. Delete a product\n3. Replace a product\n4. Search for a product\n5. Sort products\n6. Save products to file\n7. Load products from file\n8. Exit\n";
+
+int main()
+{
+    Product* list = new Product[INITIAL_CAPACITY];
+    int count = 0;
+    int capacity = INITIAL_CAPACITY;
+    char file_name[FILE_NAME_LENGTH];
+
+    while (true)
+    {
+        cout << endl << "========== Warehouse Management System ==========" << endl;
+        cout << "1. Add a product" << endl;
+        cout << "2. Delete a product" << endl;
+        cout << "3. Replace a product" << endl;
+        cout << "4. Search for a product" << endl;
+        cout << "5. Sort products" << endl;
+        cout << "6. Save products to file" << endl;
+        cout << "7. Load products from file" << endl;
+        cout << "8. Exit" << endl;
+        cout << "9. Display all products" << endl;
         cout << "Enter your choice: ";
         int choice;
         cin >> choice;
-        cin.ignore();
 
-        switch (choice) {
-        case 1:
-            add_product(products, num_products);
+        switch ((MenuOption)choice)
+        {
+        case DISPLAY:
+            display_all_products(list, count);
             break;
-        case 2: {
-            int delete_ind;
-            cout << "\nEnter the index of the product to delete: ";
-            cin >> delete_ind;
-            cin.ignore();
-            delete_product(products, delete_ind, num_products);
+        case ADD:
+            add_product_data(list, count, capacity);
             break;
-        }
-        case 3: {
-            int replace_ind;
-            cout << "\nEnter the index of the product to replace: ";
-            cin >> replace_ind;
-            cin.ignore();
-            replace_product(products, replace_ind, num_products);
+        case DELETE:
+            delete_product_data(list, count);
             break;
-        }
-        case 4: {
-            cout << "\n========== Search Options ==========\n";
-            cout << "1. By name\n2. By manufacturer\n3. By price\n4. By category\n5. By arrival date\n6. By expiration date\n";
+        case REPLACE:
+            replace_product_data(list, count);
+            break;
+        case SEARCH:
+        {
+            int opt;
+            cout << endl << "1. By name" << endl;
+            cout << "2. By manufacturer" << endl;
+            cout << "3. By price" << endl;
+            cout << "4. By category" << endl;
+            cout << "5. By arrival date" << endl;
+            cout << "6. By expiration date" << endl;
             cout << "Enter your choice: ";
-            int search_choice;
-            cin >> search_choice;
-            cin.ignore();
-
-            switch (search_choice) {
-            case 1: {
-                char name[NAME_LENGTH];
-                cout << "\nEnter the name of the product: ";
-                cin.getline(name, NAME_LENGTH);
-                search_product_by_name(products, num_products, name);
-                break;
-            }
-            case 2: {
-                char manufacturer[MANUFACTURER_LENGTH];
-                cout << "\nEnter the manufacturer of the product: ";
-                cin.getline(manufacturer, MANUFACTURER_LENGTH);
-                search_product_by_manufacturer(products, num_products, manufacturer);
-                break;
-            }
-            case 3: {
-                double price;
-                cout << "\nEnter the price of the product: ";
-                cin >> price;
-                cin.ignore();
-                search_product_by_price(products, num_products, price);
-                break;
-            }
-            case 4: {
-                char category[CATEGORY_LENGTH];
-                cout << "\nEnter the category of the product: ";
-                cin.getline(category, CATEGORY_LENGTH);
-                search_product_by_category(products, num_products, category);
-                break;
-            }
-            case 5: {
-                Date d;
-                cout << "\nEnter the arrival date (day month year): ";
-                cin >> d.day >> d.month >> d.year;
-                cin.ignore();
-                search_product_by_arrival_date(products, num_products, d);
-                break;
-            }
-            case 6: {
-                Date d;
-                cout << "\nEnter the expiration date (day month year): ";
-                cin >> d.day >> d.month >> d.year;
-                cin.ignore();
-                search_product_by_expiration_date(products, num_products, d);
-                break;
-            }
-            default:
-                cout << "\nInvalid search option." << endl;
-                break;
+            cin >> opt;
+            switch (opt)
+            {
+            case 1: search_by_name(list, count); break;
+            case 2: search_by_manufacturer(list, count); break;
+            case 3: search_by_price(list, count); break;
+            case 4: search_by_category(list, count); break;
+            case 5: search_by_arrival_date(list, count); break;
+            case 6: search_by_expiration_date(list, count); break;
+            default: cout << endl << "Invalid search option." << endl;
             }
             break;
         }
-        case 5: {
-            cout << "\n========== Sort Options ==========\n";
-            cout << "1. By price\n2. By category\n";
+        case SORT:
+        {
+            int opt;
+            cout << endl << "1. By price" << endl;
+            cout << "2. By category" << endl;
             cout << "Enter your choice: ";
-            int sort_choice;
-            cin >> sort_choice;
-            cin.ignore();
-
-            switch (sort_choice) {
-            case 1:
-                sort_products_by_price(products, num_products);
-                break;
-            case 2:
-                sort_products_by_category(products, num_products);
-                break;
-            default:
-                cout << "\nInvalid sort option." << endl;
-                break;
+            cin >> opt;
+            switch (opt)
+            {
+            case 1: sort_by_price(list, count); break;
+            case 2: sort_by_category(list, count); break;
+            default: cout << endl << "Invalid sort option." << endl;
             }
             break;
         }
-        case 6: {
-            cout << "\nEnter the filename to save the products to: ";
-            cin.getline(filename, FILENAME_LENGTH);
-            save_products_to_file(products, num_products, filename);
+        case SAVE:
+            cout << endl << "Enter the filename to save the products to: ";
+            clear_input_buffer();
+            cin.getline(file_name, FILE_NAME_LENGTH);
+            save_to_file(list, count, file_name);
             break;
-        }
-        case 7: {
-            cout << "\nEnter the filename to load the products from: ";
-            cin.getline(filename, FILENAME_LENGTH);
-            load_products_from_file(products, num_products, filename);
+        case LOAD:
+            cout << endl << "Enter the filename to load the products from: ";
+            clear_input_buffer();
+            cin.getline(file_name, FILE_NAME_LENGTH);
+            load_from_file(list, count, capacity, file_name);
             break;
-        }
-        case 8:
-            cout << "\nExiting the program." << endl;
+        case EXIT:
+            cout << endl << "Exiting the program." << endl;
+            delete[] list;
             return 0;
         default:
-            cout << "\nInvalid choice." << endl;
-            break;
+            cout << endl << "Invalid choice." << endl;
         }
     }
 }
-
